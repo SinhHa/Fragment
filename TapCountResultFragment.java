@@ -16,10 +16,9 @@ import java.util.ArrayList;
 /**
  * Created by Jupiter (vu.cao.duy@gmail.com) on 10/14/15.
  */
-public class TapCountResultFragment extends ListFragment
-{
-
-
+public class TapCountResultFragment extends ListFragment {
+    Bundle reinstate = new Bundle();
+    Bundle bundle = new Bundle();
 
 
     @Override
@@ -31,19 +30,32 @@ public class TapCountResultFragment extends ListFragment
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         setRetainInstance(true);
-    if(savedInstanceState ==null){
-        Bundle bundle = this.getArguments();
-        ListResultadapter adapter = new ListResultadapter(getActivity(), bundle.getStringArrayList("index") , bundle.getStringArrayList("time"));
-        setListAdapter(adapter);
+        if (savedInstanceState == null) {
+            bundle = this.getArguments();
+            ListResultadapter adapter = new ListResultadapter(getActivity(), bundle.getStringArrayList("index"), bundle.getStringArrayList("time"));
+            setListAdapter(adapter);
 
-    }else{
-        Toast.makeText(getActivity(), "destroy here", Toast.LENGTH_LONG).show();
-    }return super.onCreateView(inflater, container, savedInstanceState);}
+        } else {
+            bundle = savedInstanceState.getBundle("bundle");
+
+
+        }
+        ListResultadapter adapter = new ListResultadapter(getActivity(), bundle.getStringArrayList("index"), bundle.getStringArrayList("time"));
+        setListAdapter(adapter);
+        return super.onCreateView(inflater, container, savedInstanceState);
+    }
 
     @Override
     public void onDestroyView() {
 
         super.onDestroyView();
+        reinstate = bundle;
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putBundle("bundle", bundle);
     }
 
 }

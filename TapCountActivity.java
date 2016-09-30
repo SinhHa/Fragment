@@ -32,9 +32,7 @@ public class TapCountActivity extends AppCompatActivity {
     long timepasses =0;
     ArrayList<String> index= new  ArrayList<String>();
     ArrayList<String> time= new  ArrayList<String>();
-
-
-
+    Bundle bundle = new Bundle();
 
 
     public static final int TIME_COUNT = 10000; //10s
@@ -46,6 +44,7 @@ public class TapCountActivity extends AppCompatActivity {
     Chronometer tvTime;
     TapCountResultFragment newFragment = new TapCountResultFragment();
     FragmentManager fragmentManager = getSupportFragmentManager();
+
     private long startTime;
 
     @Override
@@ -54,7 +53,16 @@ public class TapCountActivity extends AppCompatActivity {
         setContentView(R.layout.activity_count);
         ButterKnife.bind(this);
 
+    if(savedInstanceState!=null){
+   for(int i=0;i< savedInstanceState.getStringArrayList("index").size();i++){
+        index.add(i,savedInstanceState.getStringArrayList("index").get(i));
 
+        }
+        for(int i=0;i< savedInstanceState.getStringArrayList("time").size();i++){
+            time.add(i,savedInstanceState.getStringArrayList("time").get(i));
+            tapcount = i;
+        }
+    }
 
 
         tvTime.setOnChronometerTickListener(new Chronometer.OnChronometerTickListener() {
@@ -151,11 +159,8 @@ public class TapCountActivity extends AppCompatActivity {
     private void addFrag(){
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd_HH/mm/ss");
         String currentDateandTime = sdf.format(new Date());
-
-        Bundle bundle = new Bundle();
-
-
         FragmentTransaction transaction = fragmentManager.beginTransaction();
+
         index.add((tapcount+1)+"");
         time.add(currentDateandTime+"");
         bundle.putStringArrayList("index",index);
@@ -184,6 +189,21 @@ public class TapCountActivity extends AppCompatActivity {
         btTap.setEnabled(false);
         btStart.setEnabled(true);
     }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putStringArrayList("index", index);
+        outState.putStringArrayList("time",time);
+
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+
+    }
+
 
 
 
