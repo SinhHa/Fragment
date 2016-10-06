@@ -16,7 +16,10 @@ import android.widget.Chronometer;
 import android.content.res.Configuration;
 import android.widget.ListView;
 import android.widget.Toast;
-
+import android.content.Context;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+import android.content.ContentValues;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import android.content.Context;
@@ -176,11 +179,10 @@ public class TapCountActivity extends AppCompatActivity {
         transaction.commit();
         tapcount++;
 
-        try {
-            savedata(time);
-        } catch (IOException e1) {
-            e1.printStackTrace();
-        }
+       SQLdatabase  sql = new SQLdatabase(TapCountActivity.this);
+
+            sql.storescore(sql,time.get(time.size()-1) );
+
 
     }
 
@@ -196,6 +198,7 @@ public class TapCountActivity extends AppCompatActivity {
 
         if(sharedPref.getBoolean("save",false) == false){
             time.clear();
+            deletehighscore(TapCountActivity.this);
             editor.putInt("progress",10);
             editor.putInt("timelimitset",10);
         }
@@ -291,6 +294,10 @@ public class TapCountActivity extends AppCompatActivity {
         return temp;
 
     }
+    public void deletehighscore(Context context){
+        context.deleteFile("HighScore.txt");
+    }
+
 
 
 
