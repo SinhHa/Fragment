@@ -1,6 +1,7 @@
 package com.hasbrain.howfastareyou;
 
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.app.Fragment;
@@ -8,6 +9,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.AppCompatTextView;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -50,8 +52,9 @@ public class TapCountActivity extends AppCompatActivity {
     int settime=10;
     static final String resulttime = "time";
     ArrayList<String> time = new ArrayList<String>();
+    ArrayList<String> score = new ArrayList<>();
     Bundle bundle = new Bundle();
-
+    AppCompatTextView highscore ;
 
     public static final int TIME_COUNT = 10000; //10s
     @Bind(R.id.bt_tap)
@@ -62,6 +65,7 @@ public class TapCountActivity extends AppCompatActivity {
     Chronometer tvTime;
     TapCountResultFragment newFragment = new TapCountResultFragment();
     FragmentManager fragmentManager = getSupportFragmentManager();
+    SQLdatabase  sql = new SQLdatabase(TapCountActivity.this);
 
     private long startTime;
 
@@ -70,7 +74,7 @@ public class TapCountActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_count);
         ButterKnife.bind(this);
-
+        highscore = (AppCompatTextView) findViewById(R.id.taprecord);
         if (savedInstanceState != null) {
 
             for (int i = 0; i < savedInstanceState.getStringArrayList(resulttime).size(); i++) {
@@ -92,11 +96,21 @@ public class TapCountActivity extends AppCompatActivity {
 
             }
         });
-        if(gethighscore()!=null){
-        for (int i = 0; i < gethighscore().size(); i++) {
-            time.add(i, gethighscore().get(i));
 
-        }}
+        Cursor cr = sql.getScore(sql);
+        if (cr != null)
+            if (cr.moveToFirst()) {
+
+                while (cr.isAfterLast() == false) {
+                    time.add(cr.getString(0));
+                    score.add(cr.getString(1));
+                    cr.moveToNext();
+                }
+            }
+        cr.close();
+
+
+
 
     }
 
@@ -150,6 +164,7 @@ public class TapCountActivity extends AppCompatActivity {
                 }
             });
 
+
         }
 
         tvTime.start();
@@ -159,29 +174,11 @@ public class TapCountActivity extends AppCompatActivity {
 
 
     private void addFrag() {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd_HH/mm/ss");
-        String currentDateandTime = sdf.format(new Date());
-        FragmentTransaction transaction = fragmentManager.beginTransaction();
-
-
-        time.add(currentDateandTime + "");
-        bundle.putStringArrayList(resulttime, time);
-        if (newFragment.getArguments() == null) {
-            newFragment.setArguments(bundle);
-        } else {
-
-            newFragment.getArguments().putAll(bundle);
-            transaction.detach(newFragment);
-            transaction.attach(newFragment);
-        }
-
-        transaction.replace(R.id.fl_result_fragment, newFragment);
-        transaction.commit();
+        highscore = (AppCompatTextView) findViewById(R.id.taprecord);
         tapcount++;
+        highscore.setText(tapcount+"");
 
-       SQLdatabase  sql = new SQLdatabase(TapCountActivity.this);
 
-            sql.storescore(sql,time.get(time.size()-1) );
 
 
     }
@@ -195,13 +192,50 @@ public class TapCountActivity extends AppCompatActivity {
         btStart.setEnabled(true);
         SharedPreferences sharedPref = getSharedPreferences("Setting",0);
         SharedPreferences.Editor editor = sharedPref.edit();
+        highscore = (AppCompatTextView) findViewById(R.id.taprecord);
 
         if(sharedPref.getBoolean("save",false) == false){
-            time.clear();
+
             deletehighscore(TapCountActivity.this);
             editor.putInt("progress",10);
             editor.putInt("timelimitset",10);
+            sql.clearscore(sql);
+
         }
+
+        else{
+            Cursor cr = sql.getScore(sql);
+            cr.moveToLast();
+            if(cr.getCount()< time.size()){
+                for(int i=0;i<time.size();i++){
+                sql.storescore(sql,time.get(i),score.get(i));
+                    highscore.setText(time.size()+"");}
+            }
+        }
+
+
+
+
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd_HH/mm/ss");
+        String currentDateandTime = sdf.format(new Date());
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+
+        score.add(tapcount+"");
+        time.add(currentDateandTime + "");
+        bundle.putStringArrayList(resulttime, time);
+        bundle.putStringArrayList("score", score);
+        if (newFragment.getArguments() == null) {
+            newFragment.setArguments(bundle);
+        } else {
+
+            newFragment.getArguments().putAll(bundle);
+            transaction.detach(newFragment);
+            transaction.attach(newFragment);
+        }
+
+        transaction.replace(R.id.fl_result_fragment, newFragment);
+        transaction.commit();
+        tapcount=0;
     }
 
     @Override

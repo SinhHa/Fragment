@@ -24,7 +24,7 @@ public class TapCountResultFragment extends ListFragment {
                              Bundle savedInstanceState) {
         setRetainInstance(true);
         bundle = getArguments();
-            ListResultadapter adapter = new ListResultadapter(getActivity(),bundle.getStringArrayList("time"));
+            ListResultadapter adapter = new ListResultadapter(getActivity(),bundle.getStringArrayList("time"),bundle.getStringArrayList("score"));
             setListAdapter(adapter);
 
 

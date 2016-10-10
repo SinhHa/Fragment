@@ -11,6 +11,7 @@ public Time(){}
         public static final String TIMESCORE = "time_score";
         public static final String DATABASE_NAME= "time_record";
         public static final String TABLE_NAME = "time_stored";
+        public static final String TAPSCORE ="tap_score";
 
     }
 }

@@ -16,11 +16,13 @@ import java.util.ArrayList;
 public class ListResultadapter extends ArrayAdapter<String> {
     private final Context context;
     private final  ArrayList<String> timer;
+    private final ArrayList<String> score;
 
-    public ListResultadapter(Context context, ArrayList<String> timer) {
+    public ListResultadapter(Context context, ArrayList<String> timer, ArrayList<String> score) {
         super(context, R.layout.listitemresult,timer);
         this.context = context;
         this.timer = timer;
+        this.score =score;
     }
 
 
@@ -31,7 +33,7 @@ public class ListResultadapter extends ArrayAdapter<String> {
                 .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         View rowView = inflater.inflate(R.layout.listitemresult, parent, false);
        TextView textView = (TextView) rowView.findViewById(R.id.resultindex);
-        textView.setText(position+1+"");
+        textView.setText(score.get(position).toString());
         TextView timeview = (TextView) rowView.findViewById(R.id.resulttime);
         timeview.setText(timer.get(position).toString());
 
