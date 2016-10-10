@@ -22,39 +22,50 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.content.ContentValues;
+
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+
 import android.content.Context;
+
 import java.util.Date;
 import java.io.IOException;
+
 import android.util.Log;
+
 import java.util.ArrayList;
 import java.text.SimpleDateFormat;
 import java.io.File;
+
 import butterknife.Bind;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+
 import android.os.Environment;
+
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.OutputStreamWriter;
+
 import android.Manifest;
 import android.support.v4.content.ContextCompat;
 import android.content.pm.PackageManager;
 import android.support.v4.app.ActivityCompat;
+
 public class TapCountActivity extends AppCompatActivity {
-    private static final int MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL =1 ;
+    private static final int MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL = 1;
     private int tapcount = 0;
     private int rotate = 0;
     long timepasses = 0;
-    int settime=10;
+    int settime = 10;
     static final String resulttime = "time";
     ArrayList<String> time = new ArrayList<String>();
-    ArrayList<String> score = new ArrayList<>();
+    int sort[];
+    ArrayList<Integer> score = new ArrayList<>();
     Bundle bundle = new Bundle();
-    AppCompatTextView highscore ;
+    AppCompatTextView highscore;
 
     public static final int TIME_COUNT = 10000; //10s
     @Bind(R.id.bt_tap)
@@ -65,7 +76,8 @@ public class TapCountActivity extends AppCompatActivity {
     Chronometer tvTime;
     TapCountResultFragment newFragment = new TapCountResultFragment();
     FragmentManager fragmentManager = getSupportFragmentManager();
-    SQLdatabase  sql = new SQLdatabase(TapCountActivity.this);
+    SQLdatabase sql = new SQLdatabase(TapCountActivity.this);
+    boolean clockend;
 
     private long startTime;
 
@@ -79,8 +91,13 @@ public class TapCountActivity extends AppCompatActivity {
 
             for (int i = 0; i < savedInstanceState.getStringArrayList(resulttime).size(); i++) {
                 time.add(i, savedInstanceState.getStringArrayList(resulttime).get(i));
-                tapcount = i;
+
             }
+            for (int i = 0; i < savedInstanceState.getStringArrayList("scorelist").size(); i++) {
+                score.add(i, savedInstanceState.getIntegerArrayList("scorelist").get(i));
+            }
+            tapcount = savedInstanceState.getInt("score");
+
             timepasses = savedInstanceState.getLong("basetime");
             tvTime.setBase(SystemClock.elapsedRealtime() - timepasses);
             rotate = 1;
@@ -92,6 +109,8 @@ public class TapCountActivity extends AppCompatActivity {
             public void onChronometerTick(Chronometer chronometer) {
                 if (SystemClock.elapsedRealtime() - startTime >= TIME_COUNT) {
                     pauseTapping();
+                    tapcount = 0;
+                    displayfrag();
                 }
 
             }
@@ -103,13 +122,11 @@ public class TapCountActivity extends AppCompatActivity {
 
                 while (cr.isAfterLast() == false) {
                     time.add(cr.getString(0));
-                    score.add(cr.getString(1));
+                    score.add(cr.getInt(1));
                     cr.moveToNext();
                 }
             }
         cr.close();
-
-
 
 
     }
@@ -120,7 +137,6 @@ public class TapCountActivity extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return super.onCreateOptionsMenu(menu);
     }
-
 
 
     @OnClick(R.id.bt_start)
@@ -136,16 +152,21 @@ public class TapCountActivity extends AppCompatActivity {
     }
 
     private void startTapping() {
-        SharedPreferences sharedPref = getSharedPreferences("Setting",0);
-        settime= sharedPref.getInt("progress",10);
+        clockend = false;
+        SharedPreferences sharedPref = getSharedPreferences("Setting", 0);
+        settime = sharedPref.getInt("progress", 10);
 
         startTime = SystemClock.elapsedRealtime();
         tvTime.setBase(SystemClock.elapsedRealtime());
         tvTime.setOnChronometerTickListener(new Chronometer.OnChronometerTickListener() {
             @Override
             public void onChronometerTick(Chronometer chronometer) {
-                if (SystemClock.elapsedRealtime() - startTime >= settime*1000) {
+                if (SystemClock.elapsedRealtime() - startTime >= settime * 1000) {
                     pauseTapping();
+                    displayfrag();
+                    tapcount = 0;
+                    timepasses = 0;
+
 
                 }
 
@@ -157,9 +178,11 @@ public class TapCountActivity extends AppCompatActivity {
             tvTime.setOnChronometerTickListener(new Chronometer.OnChronometerTickListener() {
                 @Override
                 public void onChronometerTick(Chronometer chronometer) {
-                    if (SystemClock.elapsedRealtime() - startTime + timepasses >=settime*1000) {
+                    if (SystemClock.elapsedRealtime() - startTime + timepasses >= settime * 1000) {
                         pauseTapping();
-                    }
+                        displayfrag();
+                        tapcount = 0;
+                        timepasses = 0;}
 
                 }
             });
@@ -176,9 +199,7 @@ public class TapCountActivity extends AppCompatActivity {
     private void addFrag() {
         highscore = (AppCompatTextView) findViewById(R.id.taprecord);
         tapcount++;
-        highscore.setText(tapcount+"");
-
-
+        highscore.setText(tapcount + "");
 
 
     }
@@ -187,75 +208,37 @@ public class TapCountActivity extends AppCompatActivity {
     private void pauseTapping() {
         btTap.setEnabled(false);
         tvTime.stop();
-        timepasses = 0;
         btTap.setEnabled(false);
         btStart.setEnabled(true);
-        SharedPreferences sharedPref = getSharedPreferences("Setting",0);
-        SharedPreferences.Editor editor = sharedPref.edit();
-        highscore = (AppCompatTextView) findViewById(R.id.taprecord);
-
-        if(sharedPref.getBoolean("save",false) == false){
-
-            deletehighscore(TapCountActivity.this);
-            editor.putInt("progress",10);
-            editor.putInt("timelimitset",10);
-            sql.clearscore(sql);
-
-        }
-
-        else{
-            Cursor cr = sql.getScore(sql);
-            cr.moveToLast();
-            if(cr.getCount()< time.size()){
-                for(int i=0;i<time.size();i++){
-                sql.storescore(sql,time.get(i),score.get(i));
-                    highscore.setText(time.size()+"");}
-            }
-        }
 
 
-
-
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd_HH/mm/ss");
-        String currentDateandTime = sdf.format(new Date());
-        FragmentTransaction transaction = fragmentManager.beginTransaction();
-
-        score.add(tapcount+"");
-        time.add(currentDateandTime + "");
-        bundle.putStringArrayList(resulttime, time);
-        bundle.putStringArrayList("score", score);
-        if (newFragment.getArguments() == null) {
-            newFragment.setArguments(bundle);
-        } else {
-
-            newFragment.getArguments().putAll(bundle);
-            transaction.detach(newFragment);
-            transaction.attach(newFragment);
-        }
-
-        transaction.replace(R.id.fl_result_fragment, newFragment);
-        transaction.commit();
-        tapcount=0;
     }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putStringArrayList(resulttime, time);
-        outState.putLong("basetime",SystemClock.elapsedRealtime()-tvTime.getBase());
+        outState.putInt("score", tapcount);
+        if (SystemClock.elapsedRealtime() - startTime >= settime * 1000) {
+            outState.putLong("basetime", 0);
+        }else{
+        outState.putLong("basetime", SystemClock.elapsedRealtime() - tvTime.getBase());}
+
+        outState.putIntegerArrayList("scorelist", score);
 
     }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.menu_settings:
                 pauseTapping();
 
-                SharedPreferences sharedPref = getSharedPreferences("Setting",0);
+                SharedPreferences sharedPref = getSharedPreferences("Setting", 0);
                 SharedPreferences.Editor editor = sharedPref.edit();
-                editor.putInt("timelimitset",settime);
+                editor.putInt("timelimitset", settime);
                 editor.commit();
-                Intent intent = new Intent(TapCountActivity.this,Settingactivity.class);
+                Intent intent = new Intent(TapCountActivity.this, Settingactivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
                 return true;
@@ -264,36 +247,39 @@ public class TapCountActivity extends AppCompatActivity {
         }
         return false;
     }
+
     public void savedata(ArrayList<String> time) throws IOException {
 
         if (ContextCompat.checkSelfPermission(TapCountActivity.this,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED) {
 
-        {
+            {
 
                 // No explanation needed, we can request the permission.
 
                 ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL);
+                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL);
 
                 // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
                 // app-defined int constant. The callback method gets the
                 // result of the request.
             }
         }
-        FileOutputStream fileout = openFileOutput("Highscore.txt",Context.MODE_ENABLE_WRITE_AHEAD_LOGGING);
+        FileOutputStream fileout = openFileOutput("Highscore.txt", Context.MODE_ENABLE_WRITE_AHEAD_LOGGING);
 
-        OutputStreamWriter outputWriter=new OutputStreamWriter(fileout);
-        for(int i=0;i<time.size();i++){
+        OutputStreamWriter outputWriter = new OutputStreamWriter(fileout);
+        for (int i = 0; i < time.size(); i++) {
             outputWriter.write(time.get(i).toString());
             outputWriter.write(",");
-
+            outputWriter.write(score.get(i).toString());
+            outputWriter.write(",");
         }
+
 
         outputWriter.close();
         //display file saved message
-      gethighscore();
+        gethighscore();
 
 
     }
@@ -328,12 +314,89 @@ public class TapCountActivity extends AppCompatActivity {
         return temp;
 
     }
-    public void deletehighscore(Context context){
+
+    public void deletehighscore(Context context) {
         context.deleteFile("HighScore.txt");
     }
 
+    public void displayfrag() {
+        SharedPreferences sharedPref = getSharedPreferences("Setting", 0);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        highscore = (AppCompatTextView) findViewById(R.id.taprecord);
+
+        if (sharedPref.getBoolean("save", false) == false) {
+
+            deletehighscore(TapCountActivity.this);
+            editor.putInt("progress", 10);
+            editor.putInt("timelimitset", 10);
+            sql.clearscore(sql);
+
+        } else {
+            Cursor cr = sql.getScore(sql);
+            cr.moveToLast();
+            if (cr.getCount() < time.size()) {
+                for (int i = 0; i < time.size(); i++) {
+                    sql.storescore(sql, time.get(i), score.get(i));
+                    highscore.setText(tapcount + "");
+                }
+            }
+        }
 
 
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd_HH/mm/ss");
+        String currentDateandTime = sdf.format(new Date());
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        score.add(tapcount);
+        time.add(currentDateandTime + "");
+        quickSort(score,0,score.size()-1);
+        bundle.putStringArrayList(resulttime, time);
+        bundle.putIntegerArrayList("score", score);
+        if (newFragment.getArguments() == null) {
+            newFragment.setArguments(bundle);
+        } else {
+
+            newFragment.getArguments().putAll(bundle);
+            transaction.detach(newFragment);
+            transaction.attach(newFragment);
+        }
+
+        transaction.replace(R.id.fl_result_fragment, newFragment);
+        transaction.commit();
+    }
+    int partition(ArrayList<Integer> arr, int left, int right)
+    {
+        int i = left, j = right;
+        int tmp;
+        int pivot = arr.get((left + right) / 2);
+
+        while (i <= j) {
+            while (arr.get(i) < pivot)
+                i++;
+            while (arr.get(j) > pivot)
+                j--;
+            if (i <= j) {
+                String temp="";
+                temp = time.get(i);
+                tmp = arr.get(i);
+                time.set(i,time.get(j));
+                arr.set(i,arr.get(j));
+                time.set(j,temp);
+                arr.set(j,tmp);
+                i++;
+                j--;
+            }
+        };
+
+        return i;
+    }
+
+    void quickSort(ArrayList<Integer> arr, int left, int right) {
+        int index = partition(arr, left, right);
+        if (left < index - 1)
+            quickSort(arr, left, index - 1);
+        if (index < right)
+            quickSort(arr, index, right);
+    }
 
 
 }

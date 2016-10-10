@@ -16,9 +16,9 @@ import java.util.ArrayList;
 public class ListResultadapter extends ArrayAdapter<String> {
     private final Context context;
     private final  ArrayList<String> timer;
-    private final ArrayList<String> score;
+    private final ArrayList<Integer> score;
 
-    public ListResultadapter(Context context, ArrayList<String> timer, ArrayList<String> score) {
+    public ListResultadapter(Context context, ArrayList<String> timer, ArrayList<Integer> score) {
         super(context, R.layout.listitemresult,timer);
         this.context = context;
         this.timer = timer;

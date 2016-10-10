@@ -14,7 +14,7 @@ import android.util.Log;
  */
 public class SQLdatabase extends SQLiteOpenHelper{
     public static final int database_version =1;
-    public String CREATE_QUERY ="CREATE TABLE "+time.TABLE_NAME+" ("+time.TIMESCORE+" TEXT,"+time.TAPSCORE+" TEXT"+");";
+    public String CREATE_QUERY ="CREATE TABLE "+time.TABLE_NAME+" ("+time.TIMESCORE+" TEXT,"+time.TAPSCORE+" INTEGER"+");";
     public SQLdatabase(Context context) {
         super(context,time.DATABASE_NAME,null,database_version);
 
@@ -29,7 +29,7 @@ public class SQLdatabase extends SQLiteOpenHelper{
     public void onUpgrade(SQLiteDatabase sqLiteDatabase, int i, int i1) {
 
     }
-    public void storescore(SQLdatabase sql,String score,String tap )
+    public void storescore(SQLdatabase sql,String score,int tap )
     {
     SQLiteDatabase sqldatabase = sql.getWritableDatabase();
         ContentValues cv = new ContentValues();
@@ -51,5 +51,7 @@ public class SQLdatabase extends SQLiteOpenHelper{
         sqldata.delete(time.TABLE_NAME,null,null);
 
     }
+
+
 
 }
